@@ -42,7 +42,7 @@ function getHrFromTimestamp(ts) {
 }
 async function getWeatherDataExternal(lat,lon) {
     const response = await fetch(
-        `http://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=3c9dca3280b2d474a1b54e8cf6882d0e&units=metric`,
+        `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=3c9dca3280b2d474a1b54e8cf6882d0e&units=metric`,
         {
             mode: 'cors',
         }
@@ -60,7 +60,7 @@ async function getWeatherDataExternal(lat,lon) {
 
 async function getWeatherAlerts(lat,lon) {
     const response = await fetch(
-        `http://api.openweathermap.org/data/2.5/onecall?lat=${lat}&lon=${lon}&appid=3c9dca3280b2d474a1b54e8cf6882d0e&units=metric`,
+        `https://api.openweathermap.org/data/2.5/onecall?lat=${lat}&lon=${lon}&appid=3c9dca3280b2d474a1b54e8cf6882d0e&units=metric`,
         {
             mode: 'cors',
         }
@@ -77,7 +77,7 @@ async function getWeatherAlerts(lat,lon) {
 
 async function getPollutantsData(lat, lon) {
     const response = await fetch(
-        `http://api.openweathermap.org/data/2.5/air_pollution?lat=${lat}&lon=${lon}&appid=3c9dca3280b2d474a1b54e8cf6882d0e`,
+        `https://api.openweathermap.org/data/2.5/air_pollution?lat=${lat}&lon=${lon}&appid=3c9dca3280b2d474a1b54e8cf6882d0e`,
         {
             mode: 'cors',
         }
