@@ -60,7 +60,7 @@ async function getWeatherDataExternal(lat,lon) {
 
 async function getWeatherAlerts(lat,lon) {
     const response = await fetch(
-        `https://api.openweathermap.org/data/2.5/onecall?lat=${lat}&lon=${lon}&appid=3c9dca3280b2d474a1b54e8cf6882d0e&units=metric`,
+        `http://api.openweathermap.org/data/2.5/onecall?lat=${lat}&lon=${lon}&appid=3c9dca3280b2d474a1b54e8cf6882d0e&units=metric`,
         {
             mode: 'cors',
         }
