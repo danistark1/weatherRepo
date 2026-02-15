@@ -18,28 +18,24 @@ function errorFunction(e) {
     alert('Geolocation, which is required for this page, is not enabled in your browser');
 }
 
-// --- Icon Mapping ---
-/**
- * CRITICAL: Ensure your filenames in the /icons folder match these strings exactly.
- * OpenWeather codes: 01=clear, 02=few clouds, 03=scattered, 04=broken, 09=shower, 10=rain, 11=thunder, 13=snow, 50=mist
- */
+// --- Icon Mapping (Updated for amCharts Set) ---
 function getLocalIcon(iconCode) {
-    // Remove the 'd' (day) or 'n' (night) suffix to simplify mapping
+    const isDay = iconCode.includes('d');
     const code = iconCode.substring(0, 2);
     
     const iconMap = {
-        "01": "sunny.svg",
-        "02": "mostly-sunny.svg",
-        "03": "mostly-sunny.svg", 
-        "04": "mostly-sunny.svg",
-        "09": "rain.svg",
-        "10": "rain.svg",
-        "11": "thunderstorm.svg",
-        "13": "snow.svg",
-        "50": "mostly-sunny.svg"
+        "01": isDay ? "sunny.svg" : "night.svg",
+        "02": isDay ? "cloudy-day-1.svg" : "cloudy-night-1.svg",
+        "03": isDay ? "cloudy-day-2.svg" : "cloudy-night-2.svg",
+        "04": "cloudy.svg",
+        "09": "rainy-6.svg", // Heavy showers
+        "10": isDay ? "rainy-3.svg" : "rainy-5.svg", // Rain
+        "11": "thunder.svg",
+        "13": "snowy-6.svg", // Snow
+        "50": "cloudy.svg"   // Mist/Fog
     };
 
-    const fileName = iconMap[code] || "mostly-sunny.svg";
+    const fileName = iconMap[code] || "cloudy.svg";
     return `icons/${fileName}`;
 }
 
@@ -75,7 +71,7 @@ async function getPollutantsData(lat, lon) {
             `https://api.openweathermap.org/data/2.5/air_pollution?lat=${lat}&lon=${lon}&appid=${API_KEY}`
         );
         const data = await response.json();
-        displayPollutantsData(data.list[0].components);
+        if (data.list) displayPollutantsData(data.list[0].components);
     } catch (err) {
         console.error("Pollution error:", err);
     }
@@ -125,7 +121,7 @@ function displayHourlyData(forecastList) {
         const hourlyHTML = `
             <div class="weather-by-hour__item">
                 <div class="weather-by-hour__hour">${time}</div>
-                <img src="${iconSrc}" alt="weather">
+                <img src="${iconSrc}" alt="weather icon">
                 <div>${temp}&deg;</div>
             </div>`;
         container.insertAdjacentHTML('beforeend', hourlyHTML);
@@ -149,7 +145,7 @@ function displayFiveDayData(forecastList) {
                 <div class="next-5-days__date">${dayName}<div class="next-5-days__label">${dateStr}</div></div>
                 <div class="next-5-days__low">${Math.round(day.main.temp_min)}&deg;<div class="next-5-days__label">Low</div></div>
                 <div class="next-5-days__high">${Math.round(day.main.temp_max)}&deg;<div class="next-5-days__label">High</div></div>
-                <div class="next-5-days__icon"><img src="${iconSrc}" alt="weather"></div>
+                <div class="next-5-days__icon"><img src="${iconSrc}" alt="weather icon"></div>
                 <div class="next-5-days__rain">${Math.round((day.pop || 0) * 100)}%<div class="next-5-days__label">Rain</div></div>
                 <div class="next-5-days__wind">${Math.round(day.wind.speed)}mph<div class="next-5-days__label">Wind</div></div>
             </div>`;
@@ -158,11 +154,7 @@ function displayFiveDayData(forecastList) {
 }
 
 function displayPollutantsData(pollutants) {
-    const updateEl = (cls, val) => {
-        const el = document.querySelector(cls);
-        if (el) el.textContent = val;
-    };
-    // Update selectors to match your HTML if you add pollutant elements later
+    // Optional: Add logic here if you add pollution elements to your index.html
 }
 
 // --- Helpers ---
