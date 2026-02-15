@@ -1,287 +1,198 @@
 const error = document.querySelector('.error-msg');
+const API_KEY = '3c9dca3280b2d474a1b54e8cf6882d0e';
 
-function successFunction(position) {
-    var lat = position.coords.latitude;
-    var lon = position.coords.longitude;
-    getWeatherDataExternal(lat, lon);
-    getPollutantsData(lat, lon);
-    //getWeatherAlerts(lat, lon); TODO
-}
-
-function errorFunction(e){
-    alert('Geolocation, which is required for this page, is not enabled in your browser');
-}
+// --- Initialization ---
 
 if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(successFunction, errorFunction);
 }
 
-function getDateFromTimestamp(ts) {
-    let unix_timestamp = ts
-// Create a new JavaScript Date object based on the timestamp
-// multiplied by 1000 so that the argument is in milliseconds, not seconds.
-    var date = new Date(unix_timestamp * 1000);
-return date;
+function successFunction(position) {
+    const lat = position.coords.latitude;
+    const lon = position.coords.longitude;
+    
+    getWeatherDataExternal(lat, lon);
+    getPollutantsData(lat, lon);
+    getForecastData(lat, lon); // Fetches both Hourly and 5-Day data
 }
 
-function getHrFromTimestamp(ts) {
-  let unix_timestamp = ts
-// Create a new JavaScript Date object based on the timestamp
-// multiplied by 1000 so that the argument is in milliseconds, not seconds.
-  var date = new Date(unix_timestamp * 1000);
-// // Hours part from the timestamp
-     var hours = date.getHours();
-// // Minutes part from the timestamp
-     var minutes = date.getMinutes();
-// // Seconds part from the timestamp
-//     var seconds = "0" + date.getSeconds();
-
-// Will display time in 10:30:23 format
-
-  return hours+':'+minutes;
+function errorFunction(e) {
+    alert('Geolocation, which is required for this page, is not enabled in your browser');
 }
-async function getWeatherDataExternal(lat,lon) {
-    const response = await fetch(
-        `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=3c9dca3280b2d474a1b54e8cf6882d0e&units=metric`,
-        {
-            mode: 'cors',
-        }
-    );
-    if (response.status === 400) {
-        throwErrorMsg();
-    } else {
-        // error.style.display = 'none';
+
+// --- Icon Mapping ---
+// Maps OpenWeather icon codes to your local folder files
+function getLocalIcon(iconCode) {
+    const iconMap = {
+        "01d": "sunny.svg",
+        "01n": "sunny.svg", // Or a night icon if you have one
+        "02d": "mostly-sunny.svg",
+        "02n": "mostly-sunny.svg",
+        "03d": "mostly-sunny.svg", 
+        "03n": "mostly-sunny.svg",
+        "04d": "mostly-sunny.svg",
+        "09d": "rain.svg", // Assumes you have rain.svg
+        "10d": "rain.svg",
+        "11d": "thunderstorm.svg",
+        "13d": "snow.svg",
+        "50d": "mostly-sunny.svg"
+    };
+    return `icons/${iconMap[iconCode] || "mostly-sunny.svg"}`;
+}
+
+// --- Data Fetching ---
+
+async function getWeatherDataExternal(lat, lon) {
+    try {
+        const response = await fetch(
+            `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric`
+        );
         const weatherData = await response.json();
         const newData = processData(weatherData);
         displayData(newData);
+    } catch (err) {
+        throwErrorMsg();
     }
 }
-//https://api.openweathermap.org/data/2.5/onecall?lat={lat}&lon={lon}&exclude={part}&appid={API key}
 
-async function getWeatherAlerts(lat,lon) {
-    const response = await fetch(
-        `https://api.openweathermap.org/data/2.5/onecall?lat=${lat}&lon=${lon}&appid=3c9dca3280b2d474a1b54e8cf6882d0e&units=metric`,
-        {
-            mode: 'cors',
-        }
-    );
-    if (response.status === 400) {
-        throwErrorMsg();
-    } else {
-        error.style.display = 'none';
-        const weatherAlertsData = await response.json();
-        const newAlertsData = processAlertsData(weatherAlertsData);
-        displayAlertsData(newAlertsData);
+async function getForecastData(lat, lon) {
+    try {
+        const response = await fetch(
+            `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric`
+        );
+        const forecastData = await response.json();
+        displayHourlyData(forecastData.list);
+        displayFiveDayData(forecastData.list);
+    } catch (err) {
+        console.error("Forecast error:", err);
     }
 }
 
 async function getPollutantsData(lat, lon) {
     const response = await fetch(
-        `https://api.openweathermap.org/data/2.5/air_pollution?lat=${lat}&lon=${lon}&appid=3c9dca3280b2d474a1b54e8cf6882d0e`,
-        {
-            mode: 'cors',
-        }
+        `https://api.openweathermap.org/data/2.5/air_pollution?lat=${lat}&lon=${lon}&appid=${API_KEY}`
     );
-    if (response.status === 400) {
-        throwErrorMsg();
-    } else {
-        // error.style.display = 'none';
+    if (response.ok) {
         const pollutantsData = await response.json();
         const newPollutantsData = processPollutantsData(pollutantsData);
         displayPollutantsData(newPollutantsData);
     }
 }
 
-//TOOD
-//http://192.168.4.10:8200/weatherstationapi/
-async function getWeatherDataInternal() {
-    const response = await fetch(
-        `http://....../weatherstationapi/outside`,
-        {
-            mode: 'cors',
-        }
-    );
-    if (response.status === 400) {
-        throwErrorMsg();
-    } else {
-        error.style.display = 'none';
-        const weatherData = await response.json();
-        console.log(weatherData.name);
-        const newData = processData(weatherData);
-        //displayData(newData);
-        // reset();
-    }
-}
-
-function throwErrorMsg() {
-    error.style.display = 'block';
-    if (error.classList.contains('fade-in')) {
-        error.style.display = 'none';
-        error.classList.remove('fade-in2');
-        error.offsetWidth;
-        error.classList.add('fade-in');
-        error.style.display = 'block';
-    } else {
-        error.classList.add('fade-in');
-    }
-}
+// --- Data Processing ---
 
 function processData(weatherData) {
-    // grab all the data i want to display on the page
-    const myData = {
+    return {
         condition: weatherData.weather[0].description,
-        feelsLike: {
-            c: weatherData.main.feels_like,
-        },
-        visibility: weatherData.visibility,
-        currentTemp: {
-            c: weatherData.main.temp,
-        },
-        wind: weatherData.wind.speed,
-        humidity: weatherData.main.humidity,
-        pressure: weatherData.main.pressure,
+        iconCode: weatherData.weather[0].icon,
+        feelsLike: Math.round(weatherData.main.feels_like),
+        currentTemp: Math.round(weatherData.main.temp),
+        wind: Math.round(weatherData.wind.speed),
         location: weatherData.name.toUpperCase(),
-        dateTime: getDateFromTimestamp(weatherData.dt),
         country: weatherData.sys.country,
         sunrise: getHrFromTimestamp(weatherData.sys.sunrise),
         sunset: getHrFromTimestamp(weatherData.sys.sunset),
-        tempmin: weatherData.main.temp_min,
-        tempmax: weatherData.main.temp_max,
+        tempmin: Math.round(weatherData.main.temp_min),
+        tempmax: Math.round(weatherData.main.temp_max),
     };
-    return myData;
-}
-
-function processAlertsData(weatherAlertsData) {
-    // grab all the data i want to display on the page
-    console.log(weatherAlertsData);
-    const myAlertsData = {
-        sender: weatherAlertsData.alerts[0].sender_name,
-        event: weatherAlertsData.alerts[0].event,
-        eventStartDate: getDateFromTimestamp(weatherAlertsData.alerts[0].start), //timestamp
-        eventEventDate: getDateFromTimestamp(weatherAlertsData.alerts[0].end), //timestamp
-        eventDescription: weatherAlertsData.alerts[0].description, //timestamp
-    };
-    return myAlertsData;
 }
 
 function processPollutantsData(pollutantsData) {
-    // grab all the data i want to display on the page
-    const myPollutantsData = {
-        co: pollutantsData.list[0].components.co,
-        no: pollutantsData.list[0].components.no,
-        no2: pollutantsData.list[0].components.no2,
-        o3: pollutantsData.list[0].components.o3,
-        so2: pollutantsData.list[0].components.so2,
-        pm2_5: pollutantsData.list[0].components.pm2_5,
-        pm10: pollutantsData.list[0].components.pm10,
-        nh3: pollutantsData.list[0].components.nh3,
-    };
-
-    return myPollutantsData;
-}
-function displayAlertsData(newAlertsData) {
-    const weatherAlertsInfo = document.getElementsByClassName('info');
-    document.querySelector(
-        '.sender'
-    ).textContent = `Sender: ${newAlertsData.sender}`;
-    document.querySelector(
-        '.event'
-    ).textContent = `Event: ${newAlertsData.event}`;
-    document.querySelector(
-        '.eventstartdate'
-    ).textContent = `Event Start Date: ${newAlertsData.eventStartDate}`;
-    document.querySelector(
-        '.eventenddate'
-    ).textContent = `Event End Date: ${newAlertsData.eventEndDate}`;
-    document.querySelector(
-        '.eventdescription'
-    ).textContent = `Event Description: ${newAlertsData.eventDescription}`;
-}
-function displayPollutantsData(newPollutantsData) {
-    const weatherInfo = document.getElementsByClassName('info');
-    document.querySelector(
-        '.co'
-    ).textContent = `Carbon Monoxide: ${newPollutantsData.co}`;
-    document.querySelector(
-        '.no'
-    ).textContent = `Nitric Oxide: ${newPollutantsData.no}`;
-    document.querySelector(
-        '.no2'
-    ).textContent = `Nitrogen Dioxide: ${newPollutantsData.no2}`;
-    document.querySelector(
-        '.o3'
-    ).textContent = `Ozone: ${newPollutantsData.o3}`;
-    document.querySelector(
-        '.so2'
-    ).textContent = `Sulphur Dioxide: ${newPollutantsData.so2}`;
-    document.querySelector(
-        '.pm2_5'
-    ).textContent = `Fine Particles2.5: ${newPollutantsData.pm2_5}`;
-    document.querySelector(
-        '.pm10'
-    ).textContent = `Fine Particles10: ${newPollutantsData.pm10}`;
-    document.querySelector(
-        '.nh3'
-    ).textContent = `Ammonia: ${newPollutantsData.nh3}`;
+    return pollutantsData.list[0].components;
 }
 
-
-
-
+// --- UI Display Functions ---
 
 function displayData(newData) {
-    const weatherInfo = document.getElementsByClassName('info');
-    Array.from(weatherInfo).forEach((div) => {
-        if (div.classList.contains('fade-in2')) {
-            div.classList.remove('fade-in2');
-            div.offsetWidth;
-            div.classList.add('fade-in2');
-        } else {
-            div.classList.add('fade-in2');
-        }
-    });
-  document.querySelector('.current-temperature__value').textContent = `${newData.currentTemp.c}`;
+    document.querySelector('.current-temperature__value').textContent = `${newData.currentTemp}°`;
     document.querySelector('.current-temperature__summary').textContent = newData.condition;
-    document.querySelector(
-        '.location-and-date__location'
-    ).textContent = `${newData.location}, ${newData.country}`;
-    // document.querySelector(
-    //     '.location-and-date__location'
-    // ).textContent = `${newData.dateTime}`;
-    //
-    // document.querySelector(
-    //     '.feels-like'
-    // ).textContent = `FEELS LIKE: ${newData.feelsLike.c}`;
-    // document.querySelector('.wind-mph').textContent = `WIND: ${newData.wind} KMH`;
-    // document.querySelector(
-    //     '.humidity'
-    // ).textContent = `HUMIDITY: ${newData.humidity}`;
-    // document.querySelector(
-    //     '.pressure'
-    // ).textContent = `PRESSURE: ${newData.pressure}`;
-    // document.querySelector(
-    //     '.visibility'
-    // ).textContent = `VISIBILITY: ${newData.visibility}`;
-    document.querySelector(
-        '.current-stats_value_sunrise'
-    ).textContent = `${newData.sunrise}`;
-    document.querySelector(
-        '.current-stats_value_sunset'
-    ).textContent = `${newData.sunset}`;
-  document.querySelector(
-    '.current-stats_value_temp_max'
-  ).textContent = `${newData.tempmax}`;
-  document.querySelector(
-    '.current-stats_value_temp_min'
-  ).textContent = `${newData.tempmin}`;
-  document.querySelector(
-    '.current-stats_value_wind'
-  ).textContent = `${newData.wind}`;
-  document.querySelector(
-    '.current-stats_value_feel'
-  ).textContent = `${newData.feelsLike.c}`;
+    document.querySelector('.location-and-date__location').textContent = `${newData.location}, ${newData.country}`;
+    
+    // Set Main Icon
+    document.querySelector('.current-temperature__icon').src = getLocalIcon(newData.iconCode);
+
+    // Stats
+    document.querySelector('.current-stats_value_sunrise').textContent = newData.sunrise;
+    document.querySelector('.current-stats_value_sunset').textContent = newData.sunset;
+    document.querySelector('.current-stats_value_temp_max').textContent = `${newData.tempmax}°`;
+    document.querySelector('.current-stats_value_temp_min').textContent = `${newData.tempmin}°`;
+    document.querySelector('.current-stats_value_wind').textContent = `${newData.wind} mph`;
+    document.querySelector('.current-stats_value_feel').textContent = `${newData.feelsLike}°`;
 }
 
+function displayHourlyData(forecastList) {
+    const container = document.querySelector('.weather-by-hour__container');
+    container.innerHTML = ''; // Clear static HTML
 
+    // Display next 7 intervals (approx 21 hours)
+    forecastList.slice(0, 7).forEach(hourData => {
+        const time = getHrFromTimestamp(hourData.dt);
+        const temp = Math.round(hourData.main.temp);
+        const iconSrc = getLocalIcon(hourData.weather[0].icon);
 
+        const hourlyHTML = `
+            <div class="weather-by-hour__item">
+                <div class="weather-by-hour__hour">${time}</div>
+                <img src="${iconSrc}" alt="weather">
+                <div>${temp}&deg;</div>
+            </div>`;
+        container.insertAdjacentHTML('beforeend', hourlyHTML);
+    });
+}
 
+function displayFiveDayData(forecastList) {
+    const container = document.querySelector('.next-5-days__container');
+    container.innerHTML = '';
+
+    // Filter for 12:00 PM readings to represent each day
+    const dailyData = forecastList.filter(reading => reading.dt_txt.includes("12:00:00"));
+
+    dailyData.forEach(day => {
+        const dateObj = new Date(day.dt * 1000);
+        const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
+        const dateStr = `${dateObj.getDate()}/${dateObj.getMonth() + 1}`;
+        
+        const high = Math.round(day.main.temp_max);
+        const low = Math.round(day.main.temp_min);
+        const rain = day.pop ? Math.round(day.pop * 100) : 0;
+        const wind = Math.round(day.wind.speed);
+        const iconSrc = getLocalIcon(day.weather[0].icon);
+
+        const rowHTML = `
+            <div class="next-5-days__row">
+                <div class="next-5-days__date">${dayName}<div class="next-5-days__label">${dateStr}</div></div>
+                <div class="next-5-days__low">${low}&deg;<div class="next-5-days__label">Low</div></div>
+                <div class="next-5-days__high">${high}&deg;<div class="next-5-days__label">High</div></div>
+                <div class="next-5-days__icon"><img src="${iconSrc}" alt="icon"></div>
+                <div class="next-5-days__rain">${rain}%<div class="next-5-days__label">Rain</div></div>
+                <div class="next-5-days__wind">${wind}mph<div class="next-5-days__label">Wind</div></div>
+            </div>`;
+        container.insertAdjacentHTML('beforeend', rowHTML);
+    });
+}
+
+function displayPollutantsData(pollutants) {
+    // Only updates if the elements exist in your HTML
+    const updateEl = (cls, val) => {
+        const el = document.querySelector(cls);
+        if (el) el.textContent = val;
+    };
+    updateEl('.co', `CO: ${pollutants.co}`);
+    updateEl('.no2', `NO2: ${pollutants.no2}`);
+    // Add others as needed
+}
+
+// --- Helpers ---
+
+function getHrFromTimestamp(ts) {
+    let date = new Date(ts * 1000);
+    let hours = date.getHours();
+    let ampm = hours >= 12 ? 'pm' : 'am';
+    hours = hours % 12;
+    hours = hours ? hours : 12; 
+    return hours + ampm;
+}
+
+function throwErrorMsg() {
+    if (error) error.style.display = 'block';
+}
